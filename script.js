@@ -188,12 +188,12 @@ selectHold.addEventListener('click', function () {
     selectPlayer01.classList.add('player--active');
   }
 
-  if (current01 >= 10) {
+  if (current01 >= 42) {
     selectPlayer01.classList.add('player--winner');
     selectName01.textContent = 'WINNER! 🐷';
     oink.play();
     hold.pause();
-  } else if (current02 >= 10) {
+  } else if (current02 >= 42) {
     selectPlayer02.classList.add('player--winner');
     selectName02.textContent = 'WINNER! 🐷';
     oink.play();
