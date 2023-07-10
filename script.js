@@ -56,10 +56,12 @@ selectBtn.addEventListener('click', function () {
   roll = Math.floor(Math.random() * 6 + 1);
   console.log(roll);
 
+  diceImg.src = `dice-${roll}.png`;
+
   if (roll === 1 && selectPlayer01.classList.contains('player--active')) {
     wrong.play();
     diceImg.classList.remove('hidden');
-    diceImg.src = 'dice-1.png';
+    // diceImg.src = 'dice-1.png';
     current01 = 0;
     selectCurrent01.textContent = current01;
     // Updates score to 0 and should pass to other player.
@@ -68,58 +70,55 @@ selectBtn.addEventListener('click', function () {
     selectPlayer02.classList.add('player--active');
     // document.querySelector('.btn--roll').classList.remove('player01');
     // document.querySelector('.btn--roll').classList.add('player02');
-  } else if (
-    roll === 2 &&
-    selectPlayer01.classList.contains('player--active')
-  ) {
+  } else if (selectPlayer01.classList.contains('player--active')) {
     diceSound.play();
     diceImg.classList.remove('hidden');
-    diceImg.src = 'dice-2.png';
-    current01 = current01 + 2;
+    // diceImg.src = 'dice-2.png';
+    current01 += roll;
     selectCurrent01.textContent = current01;
-  } else if (
-    roll === 3 &&
-    selectPlayer01.classList.contains('player--active')
-  ) {
-    diceSound.play();
-    diceImg.classList.remove('hidden');
-    diceImg.src = 'dice-3.png';
-    current01 = current01 + 3;
-    selectCurrent01.textContent = current01;
-  } else if (
-    roll === 4 &&
-    selectPlayer01.classList.contains('player--active')
-  ) {
-    diceSound.play();
-    diceImg.classList.remove('hidden');
-    diceImg.src = 'dice-4.png';
-    current01 = current01 + 4;
-    selectCurrent01.textContent = current01;
-  } else if (
-    roll === 5 &&
-    selectPlayer01.classList.contains('player--active')
-  ) {
-    diceSound.play();
-    diceImg.classList.remove('hidden');
-    diceImg.src = 'dice-5.png';
-    current01 = current01 + 5;
-    selectCurrent01.textContent = current01;
-  } else if (
-    roll === 6 &&
-    selectPlayer01.classList.contains('player--active')
-  ) {
-    diceSound.play();
-    diceImg.classList.remove('hidden');
-    diceImg.src = 'dice-6.png';
-    current01 = current01 + 6;
-    selectCurrent01.textContent = current01;
-  } else if (
-    roll === 1 &&
-    selectPlayer02.classList.contains('player--active')
-  ) {
+  }
+
+  //   } else if (
+  //     roll === 3 &&
+  //     selectPlayer01.classList.contains('player--active')
+  //   ) {
+  //     diceSound.play();
+  //     diceImg.classList.remove('hidden');
+  //     // diceImg.src = 'dice-3.png';
+  //     current01 = roll;
+  //     selectCurrent01.textContent = current01;
+  //   } else if (
+  //     roll === 4 &&
+  //     selectPlayer01.classList.contains('player--active')
+  //   ) {
+  //     diceSound.play();
+  //     diceImg.classList.remove('hidden');
+  //     // diceImg.src = 'dice-4.png';
+  //     current01 = roll;
+  //     selectCurrent01.textContent = current01;
+  //   } else if (
+  //     roll === 5 &&
+  //     selectPlayer01.classList.contains('player--active')
+  //   ) {
+  //     diceSound.play();
+  //     diceImg.classList.remove('hidden');
+  //     // diceImg.src = 'dice-5.png';
+  //     current01 = roll;
+  //     selectCurrent01.textContent = current01;
+  //   } else if (
+  //     roll === 6 &&
+  //     selectPlayer01.classList.contains('player--active')
+  //   ) {
+  //     diceSound.play();
+  //     diceImg.classList.remove('hidden');
+  //     // diceImg.src = 'dice-6.png';
+  //     current01 = roll;
+  //     selectCurrent01.textContent = current01;
+  //   }
+  else if (roll === 1 && selectPlayer02.classList.contains('player--active')) {
     wrong.play();
     diceImg.classList.remove('hidden');
-    diceImg.src = 'dice-1.png';
+    // diceImg.src = 'dice-1.png';
     current02 = 0;
     selectCurrent02.textContent = current02;
     // Updates score to 0 and should pass to other player.
@@ -128,79 +127,81 @@ selectBtn.addEventListener('click', function () {
     selectPlayer01.classList.add('player--active');
     // document.querySelector('.btn--roll').classList.remove('player02');
     // document.querySelector('.btn--roll').classList.add('player01');
-  } else if (
-    roll === 2 &&
-    selectPlayer02.classList.contains('player--active')
-  ) {
+  } else if (selectPlayer02.classList.contains('player--active')) {
     diceSound.play();
     diceImg.classList.remove('hidden');
-    diceImg.src = 'dice-2.png';
-    current02 = current02 + 2;
-    selectCurrent02.textContent = current02;
-  } else if (
-    roll === 3 &&
-    selectPlayer02.classList.contains('player--active')
-  ) {
-    diceSound.play();
-    diceImg.classList.remove('hidden');
-    diceImg.src = 'dice-3.png';
-    current02 = current02 + 3;
-    selectCurrent02.textContent = current02;
-  } else if (
-    roll === 4 &&
-    selectPlayer02.classList.contains('player--active')
-  ) {
-    diceSound.play();
-    diceImg.classList.remove('hidden');
-    diceImg.src = 'dice-4.png';
-    current02 = current02 + 4;
-    selectCurrent02.textContent = current02;
-  } else if (
-    roll === 5 &&
-    selectPlayer02.classList.contains('player--active')
-  ) {
-    diceSound.play();
-    diceImg.classList.remove('hidden');
-    diceImg.src = 'dice-5.png';
-    current02 = current02 + 5;
-    selectCurrent02.textContent = current02;
-  } else if (
-    roll === 6 &&
-    selectPlayer02.classList.contains('player--active')
-  ) {
-    diceSound.play();
-    diceImg.classList.remove('hidden');
-    diceImg.src = 'dice-6.png';
-    current02 = current02 + 6;
+    // diceImg.src = 'dice-2.png';
+    current02 += roll;
     selectCurrent02.textContent = current02;
   }
+  // else if (
+  //     roll === 3 &&
+  //     selectPlayer02.classList.contains('player--active')
+  //   ) {
+  //     diceSound.play();
+  //     diceImg.classList.remove('hidden');
+  //     // diceImg.src = 'dice-3.png';
+  //     current02 = roll;
+  //     selectCurrent02.textContent = current02;
+  //   } else if (
+  //     roll === 4 &&
+  //     selectPlayer02.classList.contains('player--active')
+  //   ) {
+  //     diceSound.play();
+  //     diceImg.classList.remove('hidden');
+  //     // diceImg.src = 'dice-4.png';
+  //     current02 = roll;
+  //     selectCurrent02.textContent = current02;
+  //   } else if (
+  //     roll === 5 &&
+  //     selectPlayer02.classList.contains('player--active')
+  //   ) {
+  //     diceSound.play();
+  //     diceImg.classList.remove('hidden');
+  //     // diceImg.src = 'dice-5.png';
+  //     current02 = roll;
+  //     selectCurrent02.textContent = current02;
+  //   } else if (
+  //     roll === 6 &&
+  //     selectPlayer02.classList.contains('player--active')
+  //   ) {
+  //     diceSound.play();
+  //     diceImg.classList.remove('hidden');
+  //     // diceImg.src = 'dice-6.png';
+  //     current02 = roll;
+  //     selectCurrent02.textContent = current02;
+  //   }
 });
 
 selectHold.addEventListener('click', function () {
-  hold.play();
-
   if (selectPlayer01.classList.contains('player--active')) {
+    hold.play();
+
     selectScore01.textContent = current01;
     selectPlayer01.classList.remove('player--active');
     selectPlayer02.classList.add('player--active');
   } else if (selectPlayer02.classList.contains('player--active')) {
+    hold.play();
+
     selectScore02.textContent = current02;
     selectPlayer02.classList.remove('player--active');
     selectPlayer01.classList.add('player--active');
   }
 
-  if (selectScore01.textContent >= 42) {
+  if (current01 >= 10) {
     selectPlayer01.classList.add('player--winner');
     selectName01.textContent = 'WINNER! 🐷';
     oink.play();
-  }
-
-  if (selectScore02.textContent >= 42) {
+    hold.pause();
+  } else if (current02 >= 10) {
     selectPlayer02.classList.add('player--winner');
     selectName02.textContent = 'WINNER! 🐷';
     oink.play();
+    hold.pause();
   }
 });
+
+// WINNER PIG
 
 selectNew.addEventListener('click', function () {
   oink.pause();
