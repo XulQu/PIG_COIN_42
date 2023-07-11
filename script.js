@@ -33,6 +33,10 @@ let selectScore02 = document.querySelector('#score--1');
 let selectName01 = document.querySelector('#name--0');
 let selectName02 = document.querySelector('#name--1');
 // contains player active
+const playerActiveFunc = () => {
+  selectPlayer01.classList.toggle('player--active');
+  selectPlayer02.classList.toggle('player--active');
+};
 // let classContainsActive = classList.contains('player--active'); Im not sure if this will work, I wont test because it can casuse issues
 
 // failed test
@@ -66,8 +70,9 @@ selectBtn.addEventListener('click', function () {
     selectCurrent01.textContent = current01;
     // Updates score to 0 and should pass to other player.
     selectScore01.textContent = current01;
-    selectPlayer01.classList.remove('player--active');
-    selectPlayer02.classList.add('player--active');
+    // selectPlayer01.classList.remove('player--active');
+    // selectPlayer02.classList.add('player--active');
+    playerActiveFunc();
     // document.querySelector('.btn--roll').classList.remove('player01');
     // document.querySelector('.btn--roll').classList.add('player02');
   } else if (selectPlayer01.classList.contains('player--active')) {
@@ -123,8 +128,10 @@ selectBtn.addEventListener('click', function () {
     selectCurrent02.textContent = current02;
     // Updates score to 0 and should pass to other player.
     selectScore02.textContent = current02;
-    selectPlayer02.classList.remove('player--active');
-    selectPlayer01.classList.add('player--active');
+    // selectPlayer02.classList.remove('player--active');
+    // selectPlayer01.classList.add('player--active');
+    playerActiveFunc();
+    // Note on toggle, it needs to be applied to both selectPlayer01/02 in order to toggle on both
     // document.querySelector('.btn--roll').classList.remove('player02');
     // document.querySelector('.btn--roll').classList.add('player01');
   } else if (selectPlayer02.classList.contains('player--active')) {
@@ -173,29 +180,45 @@ selectBtn.addEventListener('click', function () {
   //   }
 });
 
+const winnerFunc01 = () => {
+  selectPlayer01.classList.add('player--winner');
+  selectName01.textContent = 'WINNER! 🐷';
+};
+
+const winnerFunc02 = () => {
+  selectPlayer02.classList.add('player--winner');
+  selectName02.textContent = 'WINNER! 🐷';
+};
+
 selectHold.addEventListener('click', function () {
   if (selectPlayer01.classList.contains('player--active')) {
     hold.play();
 
     selectScore01.textContent = current01;
-    selectPlayer01.classList.remove('player--active');
-    selectPlayer02.classList.add('player--active');
+    // selectPlayer01.classList.remove('player--active');
+    // selectPlayer02.classList.add('player--active');
+    // selectPlayer01.classList.toggle('player--active');
+    // selectPlayer02.classList.toggle('player--active');
+    playerActiveFunc();
   } else if (selectPlayer02.classList.contains('player--active')) {
     hold.play();
 
     selectScore02.textContent = current02;
-    selectPlayer02.classList.remove('player--active');
-    selectPlayer01.classList.add('player--active');
+    // selectPlayer02.classList.remove('player--active');
+    // selectPlayer01.classList.add('player--active');
+    playerActiveFunc();
   }
 
   if (current01 >= 42) {
-    selectPlayer01.classList.add('player--winner');
-    selectName01.textContent = 'WINNER! 🐷';
+    // selectPlayer01.classList.add('player--winner');
+    // selectName01.textContent = 'WINNER! 🐷';
+    winnerFunc01();
     oink.play();
     hold.pause();
   } else if (current02 >= 42) {
-    selectPlayer02.classList.add('player--winner');
-    selectName02.textContent = 'WINNER! 🐷';
+    // selectPlayer02.classList.add('player--winner');
+    // selectName02.textContent = 'WINNER! 🐷';
+    winnerFunc02();
     oink.play();
     hold.pause();
   }
@@ -217,8 +240,9 @@ selectNew.addEventListener('click', function () {
   selectName02.textContent = 'PLAYER 2';
   diceImg.classList.add('hidden');
   if (selectPlayer02.classList.contains('player--active')) {
-    selectPlayer02.classList.remove('player--active');
-    selectPlayer01.classList.add('player--active');
+    // selectPlayer02.classList.remove('player--active');
+    // selectPlayer01.classList.add('player--active');
+    playerActiveFunc();
   }
 });
 
