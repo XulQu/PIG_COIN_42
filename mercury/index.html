@@ -29,7 +29,7 @@
 
 *{box-sizing:border-box}
 body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.45}
-.wrap{max-width:1040px;margin:0 auto;padding-block:16px 48px;
+.wrap{max-width:640px;margin:0 auto;padding-block:16px 48px;
   padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px));
   display:flex;flex-direction:column;gap:20px}
 button,input,select,textarea{font:inherit;color:inherit}
@@ -56,6 +56,11 @@ button.pill{cursor:pointer}
 .alert .t{font-size:19px;font-weight:600;overflow-wrap:anywhere}
 .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 
+.tabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;background:var(--surface);border:1px solid var(--line);border-radius:99px;padding:4px}
+.tab{border:0;background:none;border-radius:99px;padding:10px 4px;cursor:pointer;font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.tab.on{background:var(--fg);color:var(--bg)}
+.btn.big{flex:1;padding:16px;font-size:16px}
+#dump{min-height:38vh}
 .grid{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr);gap:20px;align-items:start}
 @media (max-width:760px){.grid{grid-template-columns:minmax(0,1fr)}}
 .col{display:flex;flex-direction:column;gap:20px;min-width:0}
@@ -132,79 +137,67 @@ details[open] summary{margin-bottom:12px}
 
   <div id="alerts"></div>
 
-  <div class="grid">
-    <div class="col">
-      <section>
-        <h2>Dump</h2>
-        <div class="panel" style="display:flex;flex-direction:column;gap:10px">
-          <textarea id="dump" placeholder="Dentist Thursday 3pm, don't miss it. Later this week look at the lease renewal. Sam said try the ramen place on King St."></textarea>
-          <div class="row">
-            <div class="field"><label for="when">Time slot (optional)</label><input type="datetime-local" id="when"></div>
-            <div class="field"><label for="tier">Priority</label>
-              <select id="tier"><option value="auto">Auto · Mercury decides</option><option value="high">High · must not miss</option><option value="medium">Medium · look out for later</option><option value="light">Light · someone told you</option></select></div>
-          </div>
-          <div class="row">
-            <button class="btn go" id="btnDump" type="button">File it</button>
-            <button class="btn" id="btnBrief" type="button">Brief me</button>
-            <button class="btn" id="btnOpt" type="button">Optimise</button>
-            <button class="btn" id="btnMic" type="button" hidden>Speak</button>
-          </div>
-          <div class="say" id="say" hidden></div>
-          <div class="list" id="plan" hidden></div>
-        </div>
-      </section>
+  <nav class="tabs" role="tablist">
+    <button class="tab" type="button" role="tab" data-tab="dump">Dump</button>
+    <button class="tab" type="button" role="tab" data-tab="schedule">Schedule</button>
+    <button class="tab" type="button" role="tab" data-tab="calendar">Calendar</button>
+    <button class="tab" type="button" role="tab" data-tab="setup">Setup</button>
+  </nav>
 
-      <section>
-        <h2>Up next</h2>
-        <div class="list" id="upnext"></div>
-      </section>
-
-      <section>
-        <h2>Remember <span style="text-transform:none;letter-spacing:0">things people told you</span></h2>
-        <div class="list" id="remember"></div>
-      </section>
+  <section id="tab-dump">
+    <textarea id="dump" placeholder="Dentist Thursday 3pm, don't miss it. Later this week look at the lease renewal. Sam said try the ramen place on King St."></textarea>
+    <div class="row">
+      <button class="btn big" id="btnMic" type="button" hidden>Speak</button>
+      <button class="btn big go" id="btnDump" type="button">File it</button>
     </div>
+    <p class="hint" id="micHint">Voice input is not offered in this browser. Use the microphone key on your keyboard to dictate.</p>
+    <div class="say" id="say" hidden></div>
+  </section>
 
-    <div class="col">
-      <section>
-        <h2>Calendar</h2>
-        <div class="panel" style="display:flex;flex-direction:column;gap:10px">
-          <div class="calhead">
-            <button class="ic" id="calPrev" type="button" aria-label="Previous month">‹</button>
-            <b id="calTitle"></b>
-            <button class="ic" id="calNext" type="button" aria-label="Next month">›</button>
-          </div>
-          <div class="cal" id="cal"></div>
-        </div>
-        <h2 id="dayTitle"></h2>
-        <div class="list" id="dayList"></div>
-      </section>
+  <section id="tab-schedule" hidden>
+    <h2>Up next</h2>
+    <div class="list" id="upnext"></div>
+    <h2>Remember</h2>
+    <div class="list" id="remember"></div>
+  </section>
 
-      <details id="dSounds">
-        <summary>Sounds</summary>
-        <div class="tiers" id="tiers"></div>
-        <p class="hint" style="margin-top:10px">Pick any audio file from your phone for each level, such as a Nothing ringtone you have saved to Files. Clips up to 1.5 MB stay on this device.</p>
-        <div class="row" id="voiceRow" style="margin-top:10px" hidden>
-          <div class="field"><label for="voiceSel">Mercury's voice</label>
-            <select id="voiceSel"><option value="buttery">Buttery</option><option value="airy">Airy</option><option value="glassy">Glassy</option><option value="rounded">Rounded</option></select></div>
-          <button class="btn sm" id="voiceTest" type="button">Hear it</button>
-        </div>
-      </details>
-
-      <details id="dMem">
-        <summary>Memory</summary>
-        <p class="hint" id="memStat"></p>
-        <div class="log" id="log" style="margin:8px 0"></div>
-        <div class="row">
-          <button class="btn sm" id="btnExport" type="button">Save mercury-memory.json</button>
-          <label class="btn sm" for="importFile">Load a memory file</label>
-          <input type="file" id="importFile" accept="application/json,.json" hidden>
-          <button class="btn sm" id="btnClearEx" type="button" hidden>Clear examples</button>
-        </div>
-        <textarea class="jsonout" id="jsonOut" hidden readonly></textarea>
-      </details>
+  <section id="tab-calendar" hidden>
+    <div class="panel" style="display:flex;flex-direction:column;gap:10px">
+      <div class="calhead">
+        <button class="ic" id="calPrev" type="button" aria-label="Previous month">‹</button>
+        <b id="calTitle"></b>
+        <button class="ic" id="calNext" type="button" aria-label="Next month">›</button>
+      </div>
+      <div class="cal" id="cal"></div>
     </div>
-  </div>
+    <h2 id="dayTitle"></h2>
+    <div class="list" id="dayList"></div>
+  </section>
+
+  <section id="tab-setup" hidden>
+    <h2>Sounds</h2>
+    <div class="panel">
+      <div class="tiers" id="tiers"></div>
+      <p class="hint" style="margin-top:10px">Pick any audio file from your phone for each level. Clips up to 1.5 MB stay on this device.</p>
+      <div class="row" id="voiceRow" style="margin-top:10px" hidden>
+        <div class="field"><label for="voiceSel">Mercury's voice</label>
+          <select id="voiceSel"><option value="buttery">Buttery</option><option value="airy">Airy</option><option value="glassy">Glassy</option><option value="rounded">Rounded</option></select></div>
+        <button class="btn sm" id="voiceTest" type="button">Hear it</button>
+      </div>
+    </div>
+    <h2>Memory</h2>
+    <div class="panel">
+      <p class="hint" id="memStat"></p>
+      <div class="log" id="log" style="margin:8px 0"></div>
+      <div class="row">
+        <button class="btn sm" id="btnExport" type="button">Save mercury-memory.json</button>
+        <label class="btn sm" for="importFile">Load a memory file</label>
+        <input type="file" id="importFile" accept="application/json,.json" hidden>
+        <button class="btn sm" id="btnClearEx" type="button" hidden>Clear examples</button>
+      </div>
+      <textarea class="jsonout" id="jsonOut" hidden readonly></textarea>
+    </div>
+  </section>
 </div>
 
 <script>
@@ -368,10 +361,10 @@ function renderCal(){
     b.appendChild(el("span",null,String(d.getDate())));var ds=el("span","ds");
     (by[k]||[]).sort(function(a,c){return rank(a.tier)-rank(c.tier)}).slice(0,3).forEach(function(i){ds.appendChild(el("i",i.tier))});b.appendChild(ds);
     b.setAttribute("aria-label",d.toDateString()+", "+(by[k]?by[k].length:0)+" items");
-    b.addEventListener("click",function(){selected=k;var w=$("when");w.value=k+"T"+((w.value||"T09:00").split("T")[1]||"09:00");renderCal()});
+    b.addEventListener("click",function(){selected=k;renderCal()});
     cal.appendChild(b)})(new Date(start.getFullYear(),start.getMonth(),start.getDate()+n))}
   var sd=new Date(selected+"T00:00");$("dayTitle").textContent=sd.toLocaleDateString(undefined,{weekday:"long",day:"numeric",month:"long"});
-  fill($("dayList"),state.items.filter(function(i){return i.when&&i.when.slice(0,10)===selected}).sort(function(a,b){return a.when<b.when?-1:1}),"Nothing on this day. Tap File it to add something here.");
+  fill($("dayList"),state.items.filter(function(i){return i.when&&i.when.slice(0,10)===selected}).sort(function(a,b){return a.when<b.when?-1:1}),"Nothing on this day.");
 }
 function renderTiers(){var box=$("tiers");box.textContent="";
   Object.keys(TIERS).forEach(function(t){
@@ -405,8 +398,8 @@ function addItems(list,forceWhen,forceTier){var added=[];
   save();if(added[0]&&added[0].when){selected=added[0].when.slice(0,10);view=new Date(selected+"T00:00")}renderAll();return added}
 function fileIt(){
   var text=$("dump").value.trim();if(!text){say("Type a thought first.");return}
-  var forceWhen=$("when").value||null,forceTier=$("tier").value,b=$("btnDump");
-  function finish(){$("dump").value="";$("when").value="";b.disabled=false;b.textContent="File it";check()}
+  var forceWhen=null,forceTier="auto",b=$("btnDump");
+  function finish(){$("dump").value="";b.disabled=false;b.textContent="File it";check()}
   function fallback(why){var a=addItems([{title:text.split(/\n/)[0],note:"",when:localParse(text),tier:"light"}],forceWhen,forceTier)[0];
     say((why?why+" ":"")+"Filed as "+TIERS[a.tier].name.toLowerCase()+(a.when?" for "+fmtWhen(a.when):" with no time slot")+".",true);finish()}
   if(!sampleCap){fallback("");return}
@@ -427,44 +420,26 @@ function fileIt(){
     if(c==="not_granted"||c==="sampling_disabled"||c==="not_declared"){sampleCap=null;paintClaude()}
     fallback(c==="rate_limited"?"Claude is busy, so I filed it as written.":"Claude did not answer, so I filed it as written.")})
 }
-function brief(){
-  var n=localISO(new Date()),soon=state.items.filter(function(i){return !i.done&&!i.example&&i.when&&i.when>=n}).sort(function(a,b){return a.when<b.when?-1:1}).slice(0,12);
-  var loose=state.items.filter(function(i){return !i.done&&!i.example&&!i.when}).slice(0,12);
-  if(!soon.length&&!loose.length){say("Nothing on the books. Dump something and I will keep track of it.",true);return}
-  var plain=(soon.length?"Next up: "+soon.slice(0,3).map(function(i){return i.title+", "+fmtWhen(i.when).replace(" · "," at ")}).join(". ")+". ":"Nothing scheduled. ")+
-    (loose.length?"Also remember: "+loose.slice(0,3).map(function(i){return i.title}).join(". ")+".":"");
-  if(!sampleCap){say(plain,true);return}
-  var b=$("btnBrief");b.disabled=true;b.textContent="Thinking…";
-  sampleCap("You are Mercury, a personal assistant. Local time now: "+n+". Give a spoken briefing of at most two short sentences in a precise, formal, academic register with no greeting or filler: what is first, then any clash or preparation needed. Plain text only, no lists.\n\nScheduled:\n"+
-    (soon.map(function(i){return i.when+" ["+i.tier+"] "+i.title+(i.note?" ("+i.note+")":"")}).join("\n")||"nothing")+"\n\nLoose suggestions:\n"+(loose.map(function(i){return i.title}).join("\n")||"none"),{cache:false})
-    .then(function(r){say(r.text||plain,true)}).catch(function(){say(plain,true)}).then(function(){b.disabled=false;b.textContent="Brief me"})
-}
-function optimise(){
-  var box=$("plan"),n=localISO(new Date());box.hidden=true;box.textContent="";
-  var open=state.items.filter(function(i){return !i.done&&!i.example&&(!i.when||i.when>=n)}).slice(0,40);
-  if(!sampleCap){say("Optimising needs Claude, which is offline here.",true);return}
-  if(open.length<2){say("Too little on the books to optimise.",true);return}
-  var b=$("btnOpt");b.disabled=true;b.textContent="Thinking…";
-  var prompt="You are Mercury, optimising one person's schedule. Local time now: "+n+".\n"+
-    "Items: "+JSON.stringify(open.map(function(i){return {id:i.id,title:i.title,tier:i.tier,when:i.when}}))+"\n\n"+
-    "Rules: \"high\" items are fixed commitments, never move them. Move a \"medium\" item only to remove a clash or to sit beside a related item. Give each untimed \"light\" item that can be acted on a slot in a free gap within the next 7 days, between 08:00 and 21:00; leave the rest untimed. Keep 15 minutes between items. Make as few changes as possible.\n"+
-    "Reply with JSON only: {\"changes\":[{\"id\":\"item id\",\"when\":\"YYYY-MM-DDTHH:mm\"}],\"reply\":\"12 words at most, formal and precise, no filler\"}";
-  sampleCap.json(prompt,{cache:false,modelTier:"complex"}).then(function(res){
-    var ch=(res&&Array.isArray(res.changes)?res.changes:[]).map(function(c){return {it:find(c&&c.id),when:c&&typeof c.when==="string"&&/^\d{4}-\d\d-\d\dT\d\d:\d\d/.test(c.when)?c.when.slice(0,16):null}})
-      .filter(function(c){return c.it&&c.it.tier!=="high"&&c.when&&c.when>n&&c.when!==c.it.when});
-    if(!ch.length){say("Schedule already optimal.",true);return}
-    say((res.reply&&String(res.reply))||(ch.length+" changes proposed."),true);
-    ch.forEach(function(c){var d=el("div","item");d.appendChild(el("span","dot "+c.it.tier));var m=el("div");
-      m.appendChild(el("div","ti",c.it.title));m.appendChild(el("div","me",(c.it.when?fmtWhen(c.it.when):"No time slot")+"  →  "+fmtWhen(c.when)));d.appendChild(m);d.appendChild(el("span"));box.appendChild(d)});
-    var r=el("div","row");
-    r.appendChild(btn("Apply "+ch.length+" change"+(ch.length===1?"":"s"),"btn sm go",function(){ch.forEach(function(c){c.it.when=c.when;c.it.fired={}});save();box.hidden=true;say("Applied.",true);renderAll();check()}));
-    r.appendChild(btn("Discard","btn sm",function(){box.hidden=true}));box.appendChild(r);box.hidden=false
-  }).catch(function(){say("Claude did not answer. Nothing changed.",true)}).then(function(){b.disabled=false;b.textContent="Optimise"})
-}
-function wireMic(d){var mic=$("btnMic"),on=false;mic.hidden=false;
-  d.onFinal(function(p){var t=$("dump");t.value=(t.value?t.value.replace(/\s*$/," "):"")+p.text});
-  d.onState(function(s){on=s.state==="listening";mic.textContent=on?"Stop":"Speak";mic.classList.toggle("go",on)});
-  mic.addEventListener("click",function(){if(on){d.stop().catch(function(){})}else{d.start().catch(function(e){if(e&&e.code==="not_granted")mic.hidden=true})}})}
+var toggleMic=null;
+function wireMic(d){var mic=$("btnMic"),on=false,heard=false;mic.hidden=false;$("micHint").hidden=true;
+  d.onFinal(function(p){var t=$("dump");t.value=(t.value?t.value.replace(/\s*$/," "):"")+p.text;heard=true});
+  d.onState(function(s){var was=on;on=s.state==="listening";mic.textContent=on?"Stop and file":"Speak";mic.classList.toggle("go",on);
+    if(was&&!on&&heard&&$("dump").value.trim()){heard=false;fileIt()}});
+  toggleMic=function(){showTab("dump");if(on){d.stop().catch(function(){})}else{heard=false;d.start().catch(function(e){if(e&&e.code==="not_granted"){mic.hidden=true;$("micHint").hidden=false}})}};
+  mic.addEventListener("click",function(){arm();toggleMic()})}
+/* Headphone button: play/pause on the headset starts and stops voice input while Mercury is open. */
+var keep=null;
+function headset(){if(keep||!navigator.mediaSession)return;
+  try{var n=8000,buf=new ArrayBuffer(44+n),v=new DataView(buf),w=function(o,t){for(var i=0;i<t.length;i++)v.setUint8(o+i,t.charCodeAt(i))};
+    w(0,"RIFF");v.setUint32(4,36+n,true);w(8,"WAVEfmt ");v.setUint32(16,16,true);v.setUint16(20,1,true);v.setUint16(22,1,true);v.setUint32(24,8000,true);v.setUint32(28,8000,true);v.setUint16(32,1,true);v.setUint16(34,8,true);w(36,"data");v.setUint32(40,n,true);
+    for(var i=0;i<n;i++)v.setUint8(44+i,128);
+    keep=new Audio(URL.createObjectURL(new Blob([buf],{type:"audio/wav"})));keep.loop=true;keep.play().catch(function(){});
+    navigator.mediaSession.metadata=new MediaMetadata({title:"Mercury",artist:"Press play to speak"});
+    var press=function(){keep.play().catch(function(){});if(toggleMic)toggleMic()};
+    ["play","pause","stop","nexttrack"].forEach(function(a){try{navigator.mediaSession.setActionHandler(a,press)}catch(e){}})}catch(e){}}
+function showTab(name){["dump","schedule","calendar","setup"].forEach(function(t){$("tab-"+t).hidden=t!==name});
+  [].forEach.call(document.querySelectorAll(".tab"),function(b){var on=b.getAttribute("data-tab")===name;b.classList.toggle("on",on);b.setAttribute("aria-selected",on)});
+  try{localStorage.setItem("mercury.tab",name)}catch(e){}}
 function paintClaude(){$("pClaude").textContent=sampleCap?"Claude linked":"Claude offline · filing as written";$("pClaude").classList.toggle("on",!!sampleCap)}
 
 /* ---------- memory file in and out ---------- */
@@ -503,8 +478,6 @@ function tick(){var n=new Date();$("clock").textContent=pad(n.getHours())+":"+pa
 function start(){
   load();glyph();openSession();renderTiers();renderAll();paintVoice();tick();
   $("btnDump").addEventListener("click",function(){arm();fileIt()});
-  $("btnBrief").addEventListener("click",function(){arm();brief()});
-  $("btnOpt").addEventListener("click",function(){arm();optimise()});
   $("dump").addEventListener("keydown",function(e){if(e.key==="Enter"&&(e.metaKey||e.ctrlKey)){arm();fileIt()}});
   $("pArm").addEventListener("click",function(){arm();playTier("light")});
   $("pVoice").addEventListener("click",function(){state.settings.voice=!state.settings.voice;save();paintVoice();if(state.settings.voice)speak("Mercury here.")});
@@ -515,7 +488,9 @@ function start(){
   $("btnExport").addEventListener("click",exportMem);
   $("importFile").addEventListener("change",function(){if(this.files[0])importMem(this.files[0]);this.value=""});
   $("btnClearEx").addEventListener("click",function(){state.items=state.items.filter(function(i){return !i.example});save();renderAll()});
-  document.addEventListener("pointerdown",arm,{once:true});
+  [].forEach.call(document.querySelectorAll(".tab"),function(b){b.addEventListener("click",function(){showTab(b.getAttribute("data-tab"))})});
+  var t0="dump";try{t0=localStorage.getItem("mercury.tab")||"dump"}catch(e){}showTab($("tab-"+t0)?t0:"dump");
+  document.addEventListener("pointerdown",function(){arm();headset()},{once:true});
   document.addEventListener("visibilitychange",function(){if(document.hidden)stampClose();else{if(ctx)arm();check();tick()}});
   window.addEventListener("pagehide",stampClose);
   setInterval(function(){tick();stampClose();check()},10000);check();
