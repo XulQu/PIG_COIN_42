@@ -52,6 +52,15 @@ button.pill{cursor:pointer}
 .tab.on{background:var(--fg);color:var(--bg)}
 .btn.big{flex:1;padding:16px;font-size:16px}
 #dump{min-height:38vh}
+.stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.stats .panel{display:flex;flex-direction:column;gap:2px}
+.stats b{font-family:var(--display);font-weight:800;font-size:38px;line-height:1;font-variant-numeric:tabular-nums}
+.stats span{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.stats .risk{color:var(--accent)}
+.bar{height:6px;border-radius:99px;background:var(--line);overflow:hidden}
+.bar i{display:block;height:100%;width:0;background:var(--accent);border-radius:99px;transition:width .4s}
+.item.late .me{color:var(--accent)}
+#toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom, 0px) + 20px);background:var(--fg);color:var(--bg);border-radius:99px;padding:10px 18px;font-family:var(--mono);font-size:12px;z-index:20;white-space:nowrap;max-width:calc(100% - 32px);overflow:hidden;text-overflow:ellipsis}
 .grid{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr);gap:20px;align-items:start}
 @media (max-width:760px){.grid{grid-template-columns:minmax(0,1fr)}}
 .col{display:flex;flex-direction:column;gap:20px;min-width:0}
@@ -130,7 +139,7 @@ details[open] summary{margin-bottom:12px}
 
   <nav class="tabs" role="tablist">
     <button class="tab" type="button" role="tab" data-tab="dump">Dump</button>
-    <button class="tab" type="button" role="tab" data-tab="schedule">Schedule</button>
+    <button class="tab" type="button" role="tab" data-tab="schedule">Tasks</button>
     <button class="tab" type="button" role="tab" data-tab="calendar">Calendar</button>
     <button class="tab" type="button" role="tab" data-tab="setup">Setup</button>
   </nav>
@@ -146,10 +155,12 @@ details[open] summary{margin-bottom:12px}
   </section>
 
   <section id="tab-schedule" hidden>
-    <h2>Up next</h2>
-    <div class="list" id="upnext"></div>
-    <h2>Remember</h2>
-    <div class="list" id="remember"></div>
+    <div class="stats">
+      <div class="panel"><b id="stToday">0</b><span>done today</span></div>
+      <div class="panel"><b id="stStreak">0</b><span id="stStreakL">day streak</span></div>
+    </div>
+    <div class="bar" role="progressbar" aria-label="Today's tasks done"><i id="stBar"></i></div>
+    <div id="tasks" style="display:flex;flex-direction:column;gap:10px"></div>
   </section>
 
   <section id="tab-calendar" hidden>
@@ -169,6 +180,7 @@ details[open] summary{margin-bottom:12px}
     <h2>Sounds</h2>
     <div class="panel">
       <div class="tiers" id="tiers"></div>
+      <div class="row" style="margin-top:12px"><button class="btn sm" id="rewardTest" type="button">Hear the done chime</button></div>
       <p class="hint" style="margin-top:10px">Pick any audio file from your phone for each level. Clips up to 1.5 MB stay on this device.</p>
       <div class="row" id="voiceRow" style="margin-top:10px" hidden>
         <div class="field"><label for="voiceSel">Mercury's voice</label>
@@ -189,6 +201,7 @@ details[open] summary{margin-bottom:12px}
       <textarea class="jsonout" id="jsonOut" hidden readonly></textarea>
     </div>
   </section>
+  <div id="toast" role="status" hidden></div>
 </div>
 
 <script>
@@ -313,7 +326,7 @@ function renderAlerts(){var box=$("alerts");box.textContent="";
   active.slice(0,3).forEach(function(a){
     var d=el("div","alert "+a.tier);d.setAttribute("role","alert");d.appendChild(el("div","k",TIERS[a.tier].name+" · "+a.kind));d.appendChild(el("div","t",a.title));
     var r=el("div","row"),it=find(a.id);
-    if(it){r.appendChild(btn("Done","btn sm go",function(){it.done=true;save();drop(a);renderAll()}));
+    if(it){r.appendChild(btn("Done","btn sm go",function(){setDone(it,true);drop(a)}));
       r.appendChild(btn("Snooze 10 min","btn sm",function(){it.snoozeUntil=new Date(Date.now()+6e5).toISOString();save();drop(a)}))}
     r.appendChild(btn("Dismiss","btn sm",function(){drop(a)}));d.appendChild(r);box.appendChild(d)})}
 function drop(a){active=active.filter(function(x){return x!==a});renderAlerts()}
@@ -323,20 +336,48 @@ function find(id){for(var i=0;i<state.items.length;i++)if(state.items[i].id===id
 /* ---------- rendering ---------- */
 var view=new Date(),selected=dayKey(new Date());
 function itemRow(it){
-  var d=el("div","item"+(it.done?" done":""));d.appendChild(el("span","dot "+it.tier));
+  var d=el("div","item"+(it.done?" done":it.when&&it.when<localISO(new Date())?" late":""));d.appendChild(el("span","dot "+it.tier));
   var mid=el("div");var ti=el("div","ti",it.title+" ");if(it.example)ti.appendChild(el("span","tag","example"));mid.appendChild(ti);
   mid.appendChild(el("div","me",(it.when?fmtWhen(it.when):"No time slot")+" · "+TIERS[it.tier].name));
   if(it.note)mid.appendChild(el("div","no",it.note));d.appendChild(mid);
   var a=el("div","acts");
-  var c=btn(it.done?"↺":"✓","ic",function(){it.done=!it.done;save();renderAll()});c.setAttribute("aria-label",it.done?"Reopen":"Mark done");a.appendChild(c);
+  var c=btn(it.done?"↺":"✓","ic",function(){setDone(it,!it.done)});c.setAttribute("aria-label",it.done?"Reopen":"Mark done");a.appendChild(c);
   var x=btn("×","ic",function(){state.items=state.items.filter(function(i){return i!==it});save();renderAll()});x.setAttribute("aria-label","Delete");a.appendChild(x);
   d.appendChild(a);return d}
+/* ---------- tasks, streak and the done reward ---------- */
+function streak(){var dd=state.doneDays||{},d=new Date(),n=0;if(!dd[dayKey(d)])d.setDate(d.getDate()-1);
+  while(dd[dayKey(d)]>0){n++;d.setDate(d.getDate()-1)}return n}
+function renderTasks(){
+  var now=localISO(new Date()),today=now.slice(0,10),open=state.items.filter(function(i){return !i.done});
+  var timed=open.filter(function(i){return i.when}).sort(function(a,b){return a.when<b.when?-1:1});
+  var groups=[["Overdue",timed.filter(function(i){return i.when<now})],
+    ["Today",timed.filter(function(i){return i.when>=now&&i.when.slice(0,10)===today})],
+    ["Later",timed.filter(function(i){return i.when.slice(0,10)>today})],
+    ["Anytime",open.filter(function(i){return !i.when})],
+    ["Done today",state.items.filter(function(i){return i.done&&i.doneAt&&dayKey(new Date(i.doneAt))===today})]];
+  var box=$("tasks"),any=false;box.textContent="";
+  groups.forEach(function(g){if(!g[1].length)return;any=true;box.appendChild(el("h2",null,g[0]));var l=el("div","list");g[1].forEach(function(i){l.appendChild(itemRow(i))});box.appendChild(l)});
+  if(!any)box.appendChild(el("div","empty","No tasks. Dump a thought and it lands here."));
+  var done=(state.doneDays||{})[today]||0,left=groups[0][1].length+groups[1][1].length,st=streak();
+  $("stToday").textContent=done;$("stStreak").textContent=st;
+  var risk=st>0&&!done&&new Date().getHours()>=18;$("stStreakL").textContent=risk?"streak ends tonight":"day streak";$("stStreakL").classList.toggle("risk",risk);
+  $("stBar").style.width=(done+left?Math.round(done/(done+left)*100):0)+"%"}
+function setDone(it,v){var k=dayKey(new Date());state.doneDays=state.doneDays||{};
+  if(v&&!it.done){it.done=true;it.doneAt=new Date().toISOString();state.doneDays[k]=(state.doneDays[k]||0)+1;save();renderAll();reward(it)}
+  else if(!v&&it.done){it.done=false;var dk=it.doneAt?dayKey(new Date(it.doneAt)):k;if(state.doneDays[dk]>0)state.doneDays[dk]--;it.doneAt=null;save();renderAll()}}
+function chime(bonus){if(!ctx)return;tone(1047,0,.14,"sine",.25);tone(1319,.09,.14,"sine",.25);tone(1568,.18,.3,"sine",.25);
+  if(bonus){tone(2093,.32,.18,"sine",.22);tone(2637,.44,.18,"sine",.2);tone(3136,.56,.5,"sine",.18)}}
+var toastT=null;
+function toast(text){var t=$("toast");t.textContent=text;t.hidden=false;clearTimeout(toastT);toastT=setTimeout(function(){t.hidden=true},2600)}
+function reward(it){arm();var today=dayKey(new Date()),n=state.doneDays[today];
+  var left=state.items.filter(function(i){return !i.done&&i.when&&i.when.slice(0,10)<=today}).length;
+  var cleared=left===0&&it.when&&it.when.slice(0,10)<=today,bonus=cleared||Math.random()<.2;
+  chime(bonus);try{navigator.vibrate&&navigator.vibrate(bonus?[40,40,40,40,120]:[40])}catch(e){}
+  toast(cleared?"Day cleared · streak "+streak():(bonus?"Bonus · ":"")+n+" done today · streak "+streak());
+  if(cleared)speak("Day cleared.")}
 function fill(box,items,emptyText){box.textContent="";if(!items.length){box.appendChild(el("div","empty",emptyText));return}items.forEach(function(i){box.appendChild(itemRow(i))})}
 function renderAll(){
-  var timed=state.items.filter(function(i){return i.when&&!i.done}).sort(function(a,b){return a.when<b.when?-1:1});
-  var nowISO=localISO(new Date(Date.now()-36e5));
-  fill($("upnext"),timed.filter(function(i){return i.when>=nowISO}).slice(0,8),"Nothing scheduled. Dump a thought with a time and it lands here.");
-  fill($("remember"),state.items.filter(function(i){return !i.when&&!i.done}),"No loose suggestions. Anything without a time slot is kept here.");
+  renderTasks();
   renderCal();
   var n=state.items.length;$("memStat").textContent=n+" item"+(n===1?"":"s")+" and "+state.sessions.length+" start-up"+(state.sessions.length===1?"":"s")+" remembered on this device"+(storageOK?".":". This browser is blocking storage, so memory will not survive closing the page.");
   var log=$("log");log.textContent="";state.sessions.slice(-12).reverse().forEach(function(s){log.appendChild(el("div",null,"up "+fmtStamp(s.opened)+"  →  down "+(s===session?"running":fmtStamp(s.closed))))});
@@ -476,6 +517,7 @@ function start(){
   $("voiceTest").addEventListener("click",function(){state.settings.voice=true;save();paintVoice();speak("Mercury. Your next commitment is in fifteen minutes.")});
   $("calPrev").addEventListener("click",function(){view=new Date(view.getFullYear(),view.getMonth()-1,1);renderCal()});
   $("calNext").addEventListener("click",function(){view=new Date(view.getFullYear(),view.getMonth()+1,1);renderCal()});
+  $("rewardTest").addEventListener("click",function(){arm();chime(false)});
   $("btnExport").addEventListener("click",exportMem);
   $("importFile").addEventListener("change",function(){if(this.files[0])importMem(this.files[0]);this.value=""});
   $("btnClearEx").addEventListener("click",function(){state.items=state.items.filter(function(i){return !i.example});save();renderAll()});
