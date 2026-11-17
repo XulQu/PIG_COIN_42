@@ -180,8 +180,7 @@ details[open] summary{margin-bottom:12px}
     <h2>Sounds</h2>
     <div class="panel">
       <div class="tiers" id="tiers"></div>
-      <div class="row" style="margin-top:12px"><button class="btn sm" id="rewardTest" type="button">Hear the done chime</button></div>
-      <p class="hint" style="margin-top:10px">Pick any audio file from your phone for each level. Clips up to 1.5 MB stay on this device.</p>
+            <p class="hint" style="margin-top:10px">Pick any audio file from your phone for each sound, such as a game or show clip you have saved. Clips up to 1.5 MB stay on this device.</p>
       <div class="row" id="voiceRow" style="margin-top:10px" hidden>
         <div class="field"><label for="voiceSel">Mercury's voice</label>
           <select id="voiceSel"><option value="buttery">Buttery</option><option value="airy">Airy</option><option value="glassy">Glassy</option><option value="rounded">Rounded</option></select></div>
@@ -213,6 +212,12 @@ var TIERS={
   medium:{name:"Medium",desc:"Look out for later. Rings 1 hour before and on time.",lead:60},
   light:{name:"Light",desc:"Remember that someone told you. One soft chime on time.",lead:0}
 };
+var EXTRA={
+  done:{name:"Task done",desc:"Plays when you tick a task off."},
+  calendar:{name:"Check the calendar",desc:"Plays once a day when things are due and you have not opened the calendar yet."},
+  "private":{name:"Private",desc:"Plays for private or personal items. Mercury does not read those aloud."}
+};
+var SOUNDS=["high","medium","light","done","calendar","private"];
 var $=function(id){return document.getElementById(id)};
 function el(tag,cls,text){var e=document.createElement(tag);if(cls)e.className=cls;if(text!=null)e.textContent=text;return e}
 function pad(n){return (n<10?"0":"")+n}
@@ -251,7 +256,7 @@ function stampClose(){if(session){session.closed=new Date().toISOString();save()
 var ctx=null, custom={};
 function arm(){
   if(!ctx){var AC=window.AudioContext||window.webkitAudioContext;if(!AC)return;try{ctx=new AC()}catch(e){return}
-    Object.keys(TIERS).forEach(loadCustom)}
+    SOUNDS.forEach(loadCustom)}
   if(ctx.state==="suspended")ctx.resume();
   $("pArm").textContent="Sound armed";$("pArm").classList.add("on");
   try{if(navigator.wakeLock)navigator.wakeLock.request("screen").catch(function(){})}catch(e){}
@@ -264,6 +269,9 @@ function playTier(tier){
   if(custom[tier]){var s=ctx.createBufferSource();s.buffer=custom[tier];s.connect(ctx.destination);s.start();return true}
   if(tier==="high"){for(var r=0;r<3;r++){tone(1320,r*.5,.09,"square",.22);tone(1760,r*.5+.12,.09,"square",.22);tone(2093,r*.5+.24,.14,"square",.22)}}
   else if(tier==="medium"){tone(660,0,.28,"sine",.3);tone(880,.3,.4,"sine",.3)}
+  else if(tier==="done"){chime(false)}
+  else if(tier==="calendar"){tone(523,0,.2,"sine",.28);tone(392,.22,.4,"sine",.28)}
+  else if(tier==="private"){tone(330,0,.45,"triangle",.22)}
   else{tone(1175,0,.5,"triangle",.16)}
   return true}
 function b64ToBuf(b){var bin=atob(b),u=new Uint8Array(bin.length);for(var i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);return u.buffer}
@@ -301,8 +309,8 @@ var active=[];
 function fire(item,kind,msg){
   active=active.filter(function(a){return a.id!==item.id});
   active.unshift({id:item.id,tier:item.tier,title:item.title,kind:kind,msg:msg,rings:1,last:Date.now()});
-  playTier(item.tier);try{navigator.vibrate&&navigator.vibrate(item.tier==="high"?[200,80,200,80,400]:item.tier==="medium"?[200,100,200]:[120])}catch(e){}
-  speak(msg);renderAlerts()}
+  playTier(item["private"]?"private":item.tier);try{navigator.vibrate&&navigator.vibrate(item.tier==="high"?[200,80,200,80,400]:item.tier==="medium"?[200,100,200]:[120])}catch(e){}
+  if(!item["private"])speak(msg);renderAlerts()}
 function check(){
   var now=Date.now(),missed=[],dirty=false;
   state.items.forEach(function(it){
@@ -337,7 +345,7 @@ function find(id){for(var i=0;i<state.items.length;i++)if(state.items[i].id===id
 var view=new Date(),selected=dayKey(new Date());
 function itemRow(it){
   var d=el("div","item"+(it.done?" done":it.when&&it.when<localISO(new Date())?" late":""));d.appendChild(el("span","dot "+it.tier));
-  var mid=el("div");var ti=el("div","ti",it.title+" ");if(it.example)ti.appendChild(el("span","tag","example"));mid.appendChild(ti);
+  var mid=el("div");var ti=el("div","ti",it.title+" ");if(it.example)ti.appendChild(el("span","tag","example"));if(it["private"])ti.appendChild(el("span","tag","private"));mid.appendChild(ti);
   mid.appendChild(el("div","me",(it.when?fmtWhen(it.when):"No time slot")+" · "+TIERS[it.tier].name));
   if(it.note)mid.appendChild(el("div","no",it.note));d.appendChild(mid);
   var a=el("div","acts");
@@ -372,7 +380,7 @@ function toast(text){var t=$("toast");t.textContent=text;t.hidden=false;clearTim
 function reward(it){arm();var today=dayKey(new Date()),n=state.doneDays[today];
   var left=state.items.filter(function(i){return !i.done&&i.when&&i.when.slice(0,10)<=today}).length;
   var cleared=left===0&&it.when&&it.when.slice(0,10)<=today,bonus=cleared||Math.random()<.2;
-  chime(bonus);try{navigator.vibrate&&navigator.vibrate(bonus?[40,40,40,40,120]:[40])}catch(e){}
+  if(custom.done)playTier("done");else chime(bonus);try{navigator.vibrate&&navigator.vibrate(bonus?[40,40,40,40,120]:[40])}catch(e){}
   toast(cleared?"Day cleared · streak "+streak():(bonus?"Bonus · ":"")+n+" done today · streak "+streak());
   if(cleared)speak("Day cleared.")}
 function fill(box,items,emptyText){box.textContent="";if(!items.length){box.appendChild(el("div","empty",emptyText));return}items.forEach(function(i){box.appendChild(itemRow(i))})}
@@ -399,9 +407,9 @@ function renderCal(){
   fill($("dayList"),state.items.filter(function(i){return i.when&&i.when.slice(0,10)===selected}).sort(function(a,b){return a.when<b.when?-1:1}),"Nothing on this day.");
 }
 function renderTiers(){var box=$("tiers");box.textContent="";
-  Object.keys(TIERS).forEach(function(t){
+  SOUNDS.forEach(function(t){var L=TIERS[t]||EXTRA[t];
     var row=el("div","tier");row.appendChild(el("span","dot "+t));var body=el("div");
-    body.appendChild(el("b",null,TIERS[t].name));body.appendChild(el("small",null,TIERS[t].desc));
+    body.appendChild(el("b",null,L.name));body.appendChild(el("small",null,L.desc));
     var r=el("div","row"),name=soundName(t);
     r.appendChild(btn("Play","btn sm",function(){arm();playTier(t)}));
     var inp=el("input");inp.type="file";inp.accept="audio/*";inp.id="snd-"+t;inp.hidden=true;
@@ -426,7 +434,9 @@ function addItems(list,forceWhen,forceTier){var added=[];
   list.forEach(function(r){if(!r||!r.title)return;var tier=forceTier!=="auto"?forceTier:(TIERS[r.tier]?r.tier:"light");
     var when=forceWhen||(typeof r.when==="string"&&/^\d{4}-\d\d-\d\dT\d\d:\d\d/.test(r.when)?r.when.slice(0,16):null);
     var it={id:uid(),title:String(r.title).slice(0,120),note:String(r.note||"").slice(0,400),when:when,tier:tier,done:false,fired:{},createdAt:new Date().toISOString()};
+    if(r["private"]===true||/\b(private|personal|secret|confidential)\b/i.test(it.title+" "+it.note))it["private"]=true;
     state.items.push(it);added.push(it)});
+  if(added.some(function(i){return i["private"]}))playTier("private");
   save();if(added[0]&&added[0].when){selected=added[0].when.slice(0,10);view=new Date(selected+"T00:00")}renderAll();return added}
 function fileIt(){
   var text=$("dump").value.trim();if(!text){say("Type a thought first.");return}
@@ -442,8 +452,8 @@ function fileIt(){
     "Already scheduled:\n"+(upcoming.join("\n")||"nothing")+"\n\n"+
     "Dump:\n\"\"\"\n"+text.slice(0,4000)+"\n\"\"\"\n\n"+
     "Split the dump into separate items. Priority tiers: \"high\" = a time-critical commitment that must not be missed; \"medium\" = something to look out for later; \"light\" = a suggestion, a tip someone gave, or an idea with no deadline.\n"+
-    "\"when\" is local time as YYYY-MM-DDTHH:mm, or null when no date or time is implied. A date with no time gets 09:00. Never invent a time for a plain suggestion.\n"+
-    "Reply with JSON only, in this shape: {\"items\":[{\"title\":\"short imperative title, 60 characters at most\",\"note\":\"extra detail or empty string\",\"when\":\"YYYY-MM-DDTHH:mm or null\",\"tier\":\"high|medium|light\"}],\"reply\":\"spoken aloud, 12 words at most, precise and formal like an academic, no greeting or filler: only what was filed and any clash\"}";
+    "\"when\" is local time as YYYY-MM-DDTHH:mm, or null when no date or time is implied. A date with no time gets 09:00. Never invent a time for a plain suggestion. Set \"private\" to true for personal, health, money, relationship or confidential matters.\n"+
+    "Reply with JSON only, in this shape: {\"items\":[{\"title\":\"short imperative title, 60 characters at most\",\"note\":\"extra detail or empty string\",\"when\":\"YYYY-MM-DDTHH:mm or null\",\"tier\":\"high|medium|light\",\"private\":false}],\"reply\":\"spoken aloud, 12 words at most, precise and formal like an academic, no greeting or filler: only what was filed and any clash\"}";
   sampleCap.json(prompt,{cache:false}).then(function(res){
     var items=res&&Array.isArray(res.items)?res.items:[];if(!items.length){fallback("");return}
     var added=addItems(items,items.length===1?forceWhen:null,forceTier);
@@ -469,7 +479,10 @@ function headset(){if(keep||!navigator.mediaSession)return;
     navigator.mediaSession.metadata=new MediaMetadata({title:"Mercury",artist:"Press play to speak"});
     var press=function(){keep.play().catch(function(){});if(toggleMic)toggleMic()};
     ["play","pause","stop","nexttrack"].forEach(function(a){try{navigator.mediaSession.setActionHandler(a,press)}catch(e){}})}catch(e){}}
-function showTab(name){["dump","schedule","calendar","setup"].forEach(function(t){$("tab-"+t).hidden=t!==name});
+function nudge(){var today=dayKey(new Date());if(state.calSeen===today||state.nudged===today)return;
+  if(!state.items.some(function(i){return !i.done&&!i.example&&i.when&&i.when.slice(0,10)<=today}))return;
+  state.nudged=today;save();playTier("calendar");toast("Check the calendar")}
+function showTab(name){if(name==="calendar"&&state){state.calSeen=dayKey(new Date());save()}["dump","schedule","calendar","setup"].forEach(function(t){$("tab-"+t).hidden=t!==name});
   [].forEach.call(document.querySelectorAll(".tab"),function(b){var on=b.getAttribute("data-tab")===name;b.classList.toggle("on",on);b.setAttribute("aria-selected",on)});
   try{localStorage.setItem("mercury.tab",name)}catch(e){}}
 function paintClaude(){$("pClaude").textContent=sampleCap?"Claude linked":"Claude offline · filing as written";$("pClaude").classList.toggle("on",!!sampleCap)}
@@ -517,13 +530,12 @@ function start(){
   $("voiceTest").addEventListener("click",function(){state.settings.voice=true;save();paintVoice();speak("Mercury. Your next commitment is in fifteen minutes.")});
   $("calPrev").addEventListener("click",function(){view=new Date(view.getFullYear(),view.getMonth()-1,1);renderCal()});
   $("calNext").addEventListener("click",function(){view=new Date(view.getFullYear(),view.getMonth()+1,1);renderCal()});
-  $("rewardTest").addEventListener("click",function(){arm();chime(false)});
   $("btnExport").addEventListener("click",exportMem);
   $("importFile").addEventListener("change",function(){if(this.files[0])importMem(this.files[0]);this.value=""});
   $("btnClearEx").addEventListener("click",function(){state.items=state.items.filter(function(i){return !i.example});save();renderAll()});
   [].forEach.call(document.querySelectorAll(".tab"),function(b){b.addEventListener("click",function(){showTab(b.getAttribute("data-tab"))})});
   var t0="dump";try{t0=localStorage.getItem("mercury.tab")||"dump"}catch(e){}showTab($("tab-"+t0)?t0:"dump");
-  document.addEventListener("pointerdown",function(){arm();headset()},{once:true});
+  document.addEventListener("pointerdown",function(){arm();headset();setTimeout(nudge,1500)},{once:true});
   document.addEventListener("visibilitychange",function(){if(document.hidden)stampClose();else{if(ctx)arm();check();tick()}});
   window.addEventListener("pagehide",stampClose);
   setInterval(function(){tick();stampClose();check()},10000);check();
