@@ -146,8 +146,11 @@ details[open] summary{margin-bottom:12px}
           <div class="row">
             <button class="btn go" id="btnDump" type="button">File it</button>
             <button class="btn" id="btnBrief" type="button">Brief me</button>
+            <button class="btn" id="btnOpt" type="button">Optimise</button>
+            <button class="btn" id="btnMic" type="button" hidden>Speak</button>
           </div>
           <div class="say" id="say" hidden></div>
+          <div class="list" id="plan" hidden></div>
         </div>
       </section>
 
@@ -287,7 +290,11 @@ var ttsCap=null;
 function speak(text){
   if(!state.settings.voice||!text)return;
   if(ttsCap){ttsCap.speak(text.slice(0,1900),{voice:state.settings.voiceName||"buttery"}).catch(function(){});return}
-  try{if(window.speechSynthesis){window.speechSynthesis.cancel();window.speechSynthesis.speak(new SpeechSynthesisUtterance(text))}}catch(e){}}
+  try{if(window.speechSynthesis){var u=new SpeechSynthesisUtterance(text),v=femaleVoice();if(v)u.voice=v;u.rate=.95;u.pitch=.95;
+    window.speechSynthesis.cancel();window.speechSynthesis.speak(u)}}catch(e){}}
+function femaleVoice(){var vs=window.speechSynthesis.getVoices().filter(function(v){return /^en/i.test(v.lang)}),
+  pref=[/UK English Female/i,/Serena|Kate|Martha|Stephanie|Sonia|Libby|Hazel/i,/female/i,/Samantha|Karen|Moira|Tessa|Zira|Susan|Aria|Jenny/i];
+  for(var p=0;p<pref.length;p++)for(var i=0;i<vs.length;i++)if(pref[p].test(vs[i].name))return vs[i];return null}
 function paintVoice(){var can=!!ttsCap||!!window.speechSynthesis;
   $("pVoice").textContent=!can?"Voice unavailable here":state.settings.voice?"Voice on":"Voice off";
   $("pVoice").classList.toggle("on",can&&state.settings.voice);$("voiceRow").hidden=!ttsCap;$("voiceSel").value=state.settings.voiceName||"buttery"}
@@ -306,14 +313,14 @@ function check(){
     if(it.snoozeUntil&&now>=new Date(it.snoozeUntil).getTime()){it.snoozeUntil=null;dirty=true;fire(it,"Snoozed",it.title+", again.")}
     if(!it.when)return;var t=new Date(it.when).getTime(),lead=TIERS[it.tier].lead*6e4;
     if(now>=t&&!it.fired.at){it.fired.at=true;it.fired.pre=true;dirty=true;
-      if(now-t>5*6e4)missed.push(it);else fire(it,"Now",it.title+" is now.")}
+      if(now-t>5*6e4)missed.push(it);else fire(it,"Now",it.title+". Now.")}
     else if(lead&&now>=t-lead&&now<t&&!it.fired.pre){it.fired.pre=true;dirty=true;var m=Math.max(1,Math.round((t-now)/6e4));
-      fire(it,"In "+m+" min",(it.tier==="high"?"Heads up. ":"Look out. ")+it.title+" in "+m+" minute"+(m===1?"":"s")+".")}
+      fire(it,"In "+m+" min",it.title+". "+m+" minute"+(m===1?"":"s")+".")}
   });
   if(missed.length){var top=missed.sort(function(a,b){return rank(a.tier)-rank(b.tier)})[0];
     var txt=missed.length===1?top.title:missed.length+" reminders, including "+top.title;
     active.unshift({id:"missed-"+now,tier:top.tier,title:txt,kind:"Passed while Mercury was closed",msg:"",rings:9,last:now});
-    playTier(top.tier);speak("While I was closed you passed "+txt+".");renderAlerts()}
+    playTier(top.tier);speak("Missed: "+txt+".");renderAlerts()}
   active.forEach(function(a){if(a.tier==="high"&&a.rings<5&&now-a.last>30000){a.rings++;a.last=now;playTier("high")}});
   if(dirty){save();renderAll()}
 }
@@ -411,7 +418,7 @@ function fileIt(){
     "Dump:\n\"\"\"\n"+text.slice(0,4000)+"\n\"\"\"\n\n"+
     "Split the dump into separate items. Priority tiers: \"high\" = a time-critical commitment that must not be missed; \"medium\" = something to look out for later; \"light\" = a suggestion, a tip someone gave, or an idea with no deadline.\n"+
     "\"when\" is local time as YYYY-MM-DDTHH:mm, or null when no date or time is implied. A date with no time gets 09:00. Never invent a time for a plain suggestion.\n"+
-    "Reply with JSON only, in this shape: {\"items\":[{\"title\":\"short imperative title, 60 characters at most\",\"note\":\"extra detail or empty string\",\"when\":\"YYYY-MM-DDTHH:mm or null\",\"tier\":\"high|medium|light\"}],\"reply\":\"one or two short sentences to be spoken aloud, confirming what you filed and flagging any clash with what is already scheduled\"}";
+    "Reply with JSON only, in this shape: {\"items\":[{\"title\":\"short imperative title, 60 characters at most\",\"note\":\"extra detail or empty string\",\"when\":\"YYYY-MM-DDTHH:mm or null\",\"tier\":\"high|medium|light\"}],\"reply\":\"spoken aloud, 12 words at most, precise and formal like an academic, no greeting or filler: only what was filed and any clash\"}";
   sampleCap.json(prompt,{cache:false}).then(function(res){
     var items=res&&Array.isArray(res.items)?res.items:[];if(!items.length){fallback("");return}
     var added=addItems(items,items.length===1?forceWhen:null,forceTier);
@@ -428,10 +435,36 @@ function brief(){
     (loose.length?"Also remember: "+loose.slice(0,3).map(function(i){return i.title}).join(". ")+".":"");
   if(!sampleCap){say(plain,true);return}
   var b=$("btnBrief");b.disabled=true;b.textContent="Thinking…";
-  sampleCap("You are Mercury, a personal assistant. Local time now: "+n+". Give a spoken briefing of at most four short sentences: what is coming first, anything that clashes or needs preparing, and one loose suggestion worth acting on. Plain text only, no lists.\n\nScheduled:\n"+
+  sampleCap("You are Mercury, a personal assistant. Local time now: "+n+". Give a spoken briefing of at most two short sentences in a precise, formal, academic register with no greeting or filler: what is first, then any clash or preparation needed. Plain text only, no lists.\n\nScheduled:\n"+
     (soon.map(function(i){return i.when+" ["+i.tier+"] "+i.title+(i.note?" ("+i.note+")":"")}).join("\n")||"nothing")+"\n\nLoose suggestions:\n"+(loose.map(function(i){return i.title}).join("\n")||"none"),{cache:false})
     .then(function(r){say(r.text||plain,true)}).catch(function(){say(plain,true)}).then(function(){b.disabled=false;b.textContent="Brief me"})
 }
+function optimise(){
+  var box=$("plan"),n=localISO(new Date());box.hidden=true;box.textContent="";
+  var open=state.items.filter(function(i){return !i.done&&!i.example&&(!i.when||i.when>=n)}).slice(0,40);
+  if(!sampleCap){say("Optimising needs Claude, which is offline here.",true);return}
+  if(open.length<2){say("Too little on the books to optimise.",true);return}
+  var b=$("btnOpt");b.disabled=true;b.textContent="Thinking…";
+  var prompt="You are Mercury, optimising one person's schedule. Local time now: "+n+".\n"+
+    "Items: "+JSON.stringify(open.map(function(i){return {id:i.id,title:i.title,tier:i.tier,when:i.when}}))+"\n\n"+
+    "Rules: \"high\" items are fixed commitments, never move them. Move a \"medium\" item only to remove a clash or to sit beside a related item. Give each untimed \"light\" item that can be acted on a slot in a free gap within the next 7 days, between 08:00 and 21:00; leave the rest untimed. Keep 15 minutes between items. Make as few changes as possible.\n"+
+    "Reply with JSON only: {\"changes\":[{\"id\":\"item id\",\"when\":\"YYYY-MM-DDTHH:mm\"}],\"reply\":\"12 words at most, formal and precise, no filler\"}";
+  sampleCap.json(prompt,{cache:false,modelTier:"complex"}).then(function(res){
+    var ch=(res&&Array.isArray(res.changes)?res.changes:[]).map(function(c){return {it:find(c&&c.id),when:c&&typeof c.when==="string"&&/^\d{4}-\d\d-\d\dT\d\d:\d\d/.test(c.when)?c.when.slice(0,16):null}})
+      .filter(function(c){return c.it&&c.it.tier!=="high"&&c.when&&c.when>n&&c.when!==c.it.when});
+    if(!ch.length){say("Schedule already optimal.",true);return}
+    say((res.reply&&String(res.reply))||(ch.length+" changes proposed."),true);
+    ch.forEach(function(c){var d=el("div","item");d.appendChild(el("span","dot "+c.it.tier));var m=el("div");
+      m.appendChild(el("div","ti",c.it.title));m.appendChild(el("div","me",(c.it.when?fmtWhen(c.it.when):"No time slot")+"  →  "+fmtWhen(c.when)));d.appendChild(m);d.appendChild(el("span"));box.appendChild(d)});
+    var r=el("div","row");
+    r.appendChild(btn("Apply "+ch.length+" change"+(ch.length===1?"":"s"),"btn sm go",function(){ch.forEach(function(c){c.it.when=c.when;c.it.fired={}});save();box.hidden=true;say("Applied.",true);renderAll();check()}));
+    r.appendChild(btn("Discard","btn sm",function(){box.hidden=true}));box.appendChild(r);box.hidden=false
+  }).catch(function(){say("Claude did not answer. Nothing changed.",true)}).then(function(){b.disabled=false;b.textContent="Optimise"})
+}
+function wireMic(d){var mic=$("btnMic"),on=false;mic.hidden=false;
+  d.onFinal(function(p){var t=$("dump");t.value=(t.value?t.value.replace(/\s*$/," "):"")+p.text});
+  d.onState(function(s){on=s.state==="listening";mic.textContent=on?"Stop":"Speak";mic.classList.toggle("go",on)});
+  mic.addEventListener("click",function(){if(on){d.stop().catch(function(){})}else{d.start().catch(function(e){if(e&&e.code==="not_granted")mic.hidden=true})}})}
 function paintClaude(){$("pClaude").textContent=sampleCap?"Claude linked":"Claude offline · filing as written";$("pClaude").classList.toggle("on",!!sampleCap)}
 
 /* ---------- memory file in and out ---------- */
@@ -471,11 +504,12 @@ function start(){
   load();glyph();openSession();renderTiers();renderAll();paintVoice();tick();
   $("btnDump").addEventListener("click",function(){arm();fileIt()});
   $("btnBrief").addEventListener("click",function(){arm();brief()});
+  $("btnOpt").addEventListener("click",function(){arm();optimise()});
   $("dump").addEventListener("keydown",function(e){if(e.key==="Enter"&&(e.metaKey||e.ctrlKey)){arm();fileIt()}});
   $("pArm").addEventListener("click",function(){arm();playTier("light")});
   $("pVoice").addEventListener("click",function(){state.settings.voice=!state.settings.voice;save();paintVoice();if(state.settings.voice)speak("Mercury here.")});
   $("voiceSel").addEventListener("change",function(){state.settings.voiceName=this.value;save()});
-  $("voiceTest").addEventListener("click",function(){state.settings.voice=true;save();paintVoice();speak("Mercury here. I will keep you on time.")});
+  $("voiceTest").addEventListener("click",function(){state.settings.voice=true;save();paintVoice();speak("Mercury. Your next commitment is in fifteen minutes.")});
   $("calPrev").addEventListener("click",function(){view=new Date(view.getFullYear(),view.getMonth()-1,1);renderCal()});
   $("calNext").addEventListener("click",function(){view=new Date(view.getFullYear(),view.getMonth()+1,1);renderCal()});
   $("btnExport").addEventListener("click",exportMem);
@@ -490,6 +524,7 @@ function start(){
     c.use("sample").then(function(s){sampleCap=s;paintClaude()},paintClaude);
     c.use("tts").then(function(t){ttsCap=t;paintVoice()},function(){});
     c.use("downloads").then(function(d){dlCap=d},function(){});
+    c.use("dictation").then(function(d){if(d)wireMic(d)},function(){});
   }else paintClaude();
 }
 start();
