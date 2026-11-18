@@ -169,6 +169,10 @@ public class MainActivity extends Activity {
                     .append(String.format(Locale.US, "%-8s", h.planet))
                     .append(time.format(h.start)).append('\n');
         }
+        list.append("\nGLYPH TOY STATUS\n")
+                .append("Selected:  ").append(Store.logLine(this, "bind")).append('\n')
+                .append("Always-on: ").append(Store.logLine(this, "aod")).append('\n')
+                .append("Frame:     ").append(Store.logLine(this, "frame")).append('\n');
         schedule.setText(list);
 
         handler.postDelayed(tick, Math.min(30000, hour.end - now + 500));

@@ -26,6 +26,8 @@ public class PlanetaryToyService extends Service {
     private GlyphMatrixManager manager;
     private boolean connected;
     private boolean showMinutes;
+    // True once the system has sent an always-on event to this instance
+    private boolean alwaysOn;
 
     private final Handler handler = new Handler(Looper.getMainLooper()) {
         @Override
@@ -41,6 +43,8 @@ public class PlanetaryToyService extends Service {
                 render();
             } else if (GlyphToy.EVENT_AOD.equals(event)) {
                 // Sent once a minute while this is the always-on toy
+                alwaysOn = true;
+                Store.log(PlanetaryToyService.this, "aod", "event received");
                 render();
             }
         }
@@ -50,6 +54,7 @@ public class PlanetaryToyService extends Service {
 
     @Override
     public IBinder onBind(Intent intent) {
+        Store.log(this, "bind", "toy selected");
         manager = GlyphMatrixManager.getInstance(getApplicationContext());
         manager.init(new GlyphMatrixManager.Callback() {
             @Override
@@ -57,6 +62,12 @@ public class PlanetaryToyService extends Service {
                 if (manager == null) return;
                 manager.register(Glyph.DEVICE_23112);
                 connected = true;
+                try {
+                    // Keep the matrix lit instead of letting it time out after a few minutes
+                    manager.setGlyphMatrixTimeout(false);
+                } catch (Exception e) {
+                    Store.log(PlanetaryToyService.this, "frame", "timeout: " + e);
+                }
                 render();
             }
 
@@ -74,7 +85,8 @@ public class PlanetaryToyService extends Service {
         connected = false;
         if (manager != null) {
             try {
-                manager.turnOff();
+                // In always-on mode the last frame must stay on the matrix after we unbind
+                if (!alwaysOn) manager.turnOff();
                 manager.unInit();
             } catch (RuntimeException e) {
                 // The Glyph service has already gone away
@@ -117,8 +129,10 @@ public class PlanetaryToyService extends Service {
                     .build();
             GlyphMatrixFrame frame = new GlyphMatrixFrame.Builder().addTop(object).build(this);
             manager.setMatrixFrame(frame.render());
+            Store.log(this, "frame", "sent" + (alwaysOn ? " (always-on)" : ""));
         } catch (Exception e) {
             // Not a Glyph Matrix device, or the Glyph service refused the frame
+            Store.log(this, "frame", "failed: " + e);
         }
         handler.postDelayed(refresh, Math.max(1000, nextRefresh));
     }

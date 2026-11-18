@@ -40,6 +40,22 @@ final class Store {
         prefs(context).edit().putBoolean("notify", enabled).apply();
     }
 
+    /** Records the latest Glyph Toy activity so the app can show whether the toy is being driven. */
+    static void log(Context context, String key, String message) {
+        prefs(context).edit()
+                .putString("log_" + key, message)
+                .putLong("log_" + key + "_at", System.currentTimeMillis())
+                .apply();
+    }
+
+    static String logLine(Context context, String key) {
+        SharedPreferences prefs = prefs(context);
+        long at = prefs.getLong("log_" + key + "_at", 0);
+        if (at == 0) return "never";
+        return android.text.format.DateFormat.getTimeFormat(context).format(at)
+                + " " + prefs.getString("log_" + key, "");
+    }
+
     /** The current planetary hour for the saved location, or null if unknown. */
     static PlanetaryTime.Hour currentHour(Context context) {
         if (!hasLocation(context)) return null;
