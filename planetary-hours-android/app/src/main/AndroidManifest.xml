@@ -17,6 +17,11 @@
         android:label="@string/app_name"
         android:theme="@android:style/Theme.Material.NoActionBar">
 
+        <!-- Nothing API key; "test" is the value Nothing's own example project uses -->
+        <meta-data
+            android:name="NothingKey"
+            android:value="test" />
+
         <activity
             android:name=".MainActivity"
             android:exported="true">
