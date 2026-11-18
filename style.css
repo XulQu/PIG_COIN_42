@@ -139,6 +139,15 @@ main {
   top: 46.1rem;
 }
 
+.btn--planet {
+  top: 53.2rem;
+  font-size: 1.4rem;
+  white-space: nowrap;
+}
+.btn--planet::first-letter {
+  font-size: 1.9rem;
+}
+
 .btn:active {
   transform: translate(-50%, 3px);
   box-shadow: 0 1rem 2rem rgba(0, 0, 0, 0.15);
