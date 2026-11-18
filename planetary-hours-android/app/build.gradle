@@ -1,0 +1,36 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'app.planetaryhours'
+    compileSdk 35
+
+    defaultConfig {
+        applicationId 'app.planetaryhours'
+        minSdk 26
+        targetSdk 34
+        versionCode 1
+        versionName '1.0'
+    }
+
+    signingConfigs {
+        // A fixed debug key so every build can be installed over the last one
+        debug {
+            storeFile rootProject.file('debug.keystore')
+            storePassword 'android'
+            keyAlias 'androiddebugkey'
+            keyPassword 'android'
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_11
+        targetCompatibility JavaVersion.VERSION_11
+    }
+}
+
+dependencies {
+    // Nothing Glyph Matrix SDK, from github.com/Nothing-Developer-Programme/GlyphMatrix-Developer-Kit
+    implementation files('libs/glyph-matrix-sdk-2.0.aar')
+}

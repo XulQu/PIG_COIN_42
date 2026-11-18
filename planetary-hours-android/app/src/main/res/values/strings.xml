@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Planetary Hours</string>
+    <string name="toy_name">Planetary Hour</string>
+    <string name="toy_summary">Shows the planet ruling the current hour. Long press for minutes left.</string>
+</resources>
