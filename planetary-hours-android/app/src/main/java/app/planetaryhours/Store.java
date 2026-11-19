@@ -56,6 +56,33 @@ final class Store {
                 + " " + prefs.getString("log_" + key, "");
     }
 
+    static final String GLYPH_DEBUG = "nt_glyph_interface_debug_enable";
+
+    /** "on", "off" or "unknown": Nothing's Glyph debug mode, which sideloaded toys may need. */
+    static String glyphDebugState(Context context) {
+        try {
+            int value = android.provider.Settings.Global.getInt(
+                    context.getContentResolver(), GLYPH_DEBUG, 0);
+            return value == 1 ? "on" : "off";
+        } catch (Exception e) {
+            return "unknown";
+        }
+    }
+
+    /** Switches Glyph debug mode on. Only works once the permission was granted over adb. */
+    static boolean enableGlyphDebug(Context context) {
+        if (context.checkSelfPermission(android.Manifest.permission.WRITE_SECURE_SETTINGS)
+                != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+            return false;
+        }
+        try {
+            return android.provider.Settings.Global.putInt(
+                    context.getContentResolver(), GLYPH_DEBUG, 1);
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
     /** The current planetary hour for the saved location, or null if unknown. */
     static PlanetaryTime.Hour currentHour(Context context) {
         if (!hasLocation(context)) return null;

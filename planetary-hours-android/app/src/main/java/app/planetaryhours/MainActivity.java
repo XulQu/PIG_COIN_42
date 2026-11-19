@@ -72,11 +72,17 @@ public class MainActivity extends Activity {
 
         Button toyButton = new Button(this);
         toyButton.setText("Add to Glyph Matrix");
-        toyButton.setOnClickListener(v -> openGlyphToys());
+        toyButton.setOnClickListener(v -> openGlyphScreen("ToysManagerActivity"));
         LinearLayout.LayoutParams buttonParams = new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
         buttonParams.topMargin = dp(12);
         root.addView(toyButton, buttonParams);
+
+        Button aodButton = new Button(this);
+        aodButton.setText("Set as always-on Glyph Toy");
+        aodButton.setOnClickListener(v -> openGlyphScreen("AodToySelectActivity"));
+        root.addView(aodButton, new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
 
         Button locationButton = new Button(this);
         locationButton.setText("Update my location");
@@ -103,6 +109,7 @@ public class MainActivity extends Activity {
     @Override
     protected void onResume() {
         super.onResume();
+        Store.enableGlyphDebug(this);
         refresh();
     }
 
@@ -172,7 +179,17 @@ public class MainActivity extends Activity {
         list.append("\nGLYPH TOY STATUS\n")
                 .append("Selected:  ").append(Store.logLine(this, "bind")).append('\n')
                 .append("Always-on: ").append(Store.logLine(this, "aod")).append('\n')
-                .append("Frame:     ").append(Store.logLine(this, "frame")).append('\n');
+                .append("Frame:     ").append(Store.logLine(this, "frame")).append('\n')
+                .append("Debug mode: ").append(Store.glyphDebugState(this)).append('\n');
+        if (!"on".equals(Store.glyphDebugState(this))) {
+            list.append("\nIf the toy never lights up, Nothing's Glyph\n")
+                    .append("debug mode may be needed. From a computer\n")
+                    .append("with adb (it expires after 48 hours):\n\n")
+                    .append("adb shell settings put global\n  ").append(Store.GLYPH_DEBUG)
+                    .append(" 1\n\nTo let this app keep it on by itself:\n\n")
+                    .append("adb shell pm grant app.planetaryhours\n")
+                    .append("  android.permission.WRITE_SECURE_SETTINGS\n");
+        }
         schedule.setText(list);
 
         handler.postDelayed(tick, Math.min(30000, hour.end - now + 500));
@@ -264,12 +281,12 @@ public class MainActivity extends Activity {
 
     // ----- Glyph Matrix -----
 
-    /** Opens Nothing's Glyph Toys manager so the toy can be added to the Glyph Button carousel. */
-    private void openGlyphToys() {
+    /** Opens one of Nothing's Glyph Toy screens: the toy manager or the always-on toy picker. */
+    private void openGlyphScreen(String activity) {
         try {
             startActivity(new Intent().setComponent(new ComponentName(
                     "com.nothing.thirdparty",
-                    "com.nothing.thirdparty.matrix.toys.manager.ToysManagerActivity")));
+                    "com.nothing.thirdparty.matrix.toys.manager." + activity)));
         } catch (RuntimeException e) {
             Toast.makeText(this, "The Glyph Matrix needs a Nothing Phone (3). On one, open "
                     + "Settings > Glyph Interface > Glyph Toys.", Toast.LENGTH_LONG).show();

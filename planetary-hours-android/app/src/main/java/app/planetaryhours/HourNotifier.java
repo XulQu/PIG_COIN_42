@@ -22,6 +22,7 @@ public class HourNotifier extends BroadcastReceiver {
 
     @Override
     public void onReceive(Context context, Intent intent) {
+        Store.enableGlyphDebug(context);
         if (!Store.notificationsEnabled(context)) return;
         if (ACTION_HOUR.equals(intent.getAction())) announce(context);
         schedule(context);

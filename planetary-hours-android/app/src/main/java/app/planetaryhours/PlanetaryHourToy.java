@@ -22,7 +22,7 @@ import com.nothing.ketchum.GlyphToy;
  * current planetary hour. A long press on the Glyph Button switches to the minutes left in the
  * hour and back. Supports the always-on Glyph Toy mode.
  */
-public class PlanetaryToyService extends Service {
+public class PlanetaryHourToy extends Service {
     private GlyphMatrixManager manager;
     private boolean connected;
     private boolean showMinutes;
@@ -44,7 +44,7 @@ public class PlanetaryToyService extends Service {
             } else if (GlyphToy.EVENT_AOD.equals(event)) {
                 // Sent once a minute while this is the always-on toy
                 alwaysOn = true;
-                Store.log(PlanetaryToyService.this, "aod", "event received");
+                Store.log(PlanetaryHourToy.this, "aod", "event received");
                 render();
             }
         }
@@ -66,7 +66,7 @@ public class PlanetaryToyService extends Service {
                     // Keep the matrix lit instead of letting it time out after a few minutes
                     manager.setGlyphMatrixTimeout(false);
                 } catch (Exception e) {
-                    Store.log(PlanetaryToyService.this, "frame", "timeout: " + e);
+                    Store.log(PlanetaryHourToy.this, "frame", "timeout: " + e);
                 }
                 render();
             }

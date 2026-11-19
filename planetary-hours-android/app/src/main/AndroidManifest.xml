@@ -8,6 +8,10 @@
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <!-- Only usable after "adb shell pm grant"; lets the app keep Glyph debug mode switched on -->
+    <uses-permission
+        android:name="android.permission.WRITE_SECURE_SETTINGS"
+        tools:ignore="ProtectedPermissions" />
     <!-- Nothing Glyph Matrix -->
     <uses-permission android:name="com.nothing.ketchum.permission.ENABLE" />
 
@@ -44,7 +48,7 @@
 
         <!-- Glyph Toy for the Nothing Phone (3) Glyph Matrix -->
         <service
-            android:name=".PlanetaryToyService"
+            android:name=".PlanetaryHourToy"
             android:exported="true">
             <intent-filter>
                 <action android:name="com.nothing.glyph.TOY" />
