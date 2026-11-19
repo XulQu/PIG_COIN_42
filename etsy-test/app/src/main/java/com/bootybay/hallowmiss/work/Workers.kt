@@ -61,7 +61,7 @@ object Scheduler {
         wm.cancelUniqueWork(HEART)
         wm.cancelUniqueWork(GEN)
         wm.cancelUniqueWork(RESEARCH)
-        p.setWorking("")
+        p.markWorking("")
     }
 
     fun makeNow(ctx: Context, count: Int) {
@@ -172,12 +172,12 @@ class GenerateWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker(c
         try {
             for (i in 1..n) {
                 if (isStopped) break
-                p.setWorking("Making design $i of $n")
+                p.markWorking("Making design $i of $n")
                 try { if (studio.makeOne() != null) made++ } catch (e: Exception) { db.log("Design failed: ${e.message}") }
                 Events.bump()
             }
         } finally {
-            p.setWorking("")
+            p.markWorking("")
             p.lastBatch = System.currentTimeMillis()
         }
         db.log("Batch finished: $made of $n designs made")
@@ -211,7 +211,7 @@ class ResearchWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker(c
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
         val p = Prefs(applicationContext)
         val db = Db.get(applicationContext)
-        p.setWorking("Researching top mugs")
+        p.markWorking("Researching top mugs")
         try {
             val msg = Research.run(p, db)
             db.log("Research: $msg")
@@ -219,7 +219,7 @@ class ResearchWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker(c
             db.log("Research failed: ${e.message}")
         } finally {
             p.lastResearch = System.currentTimeMillis()
-            p.setWorking("")
+            p.markWorking("")
         }
         Result.success()
     }

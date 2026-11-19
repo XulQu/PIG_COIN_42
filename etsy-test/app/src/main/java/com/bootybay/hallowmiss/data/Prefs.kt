@@ -86,7 +86,7 @@ class Prefs(ctx: Context) {
         val j = JSONObject(trendsJson); j.keys().asSequence().associateWith { j.optDouble(it, 0.0) }
     } catch (e: Exception) { emptyMap() }
 
-    fun setWorking(text: String) {
+    fun markWorking(text: String) {
         working = text
         workingSince = if (text.isEmpty()) 0L else System.currentTimeMillis()
         Events.bump()
