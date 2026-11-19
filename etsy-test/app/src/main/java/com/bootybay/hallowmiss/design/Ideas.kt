@@ -39,7 +39,7 @@ object Ideas {
         "winter" to listOf("winter landscape engraving", "snow scene woodcut"),
     )
 
-    val ALL: List<String> get() = HALLOWEEN.keys + CHRISTMAS.keys
+    val ALL: List<String> get() = HALLOWEEN.keys.toList() + CHRISTMAS.keys
 
     /** Words that count as a mention of each motif (research titles, suggestions, feedback). */
     private val SYNONYMS: Map<String, List<String>> = mapOf(
